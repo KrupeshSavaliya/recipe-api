@@ -1,4 +1,4 @@
-FROM python:3.6-alphine
+FROM python:3.7-alpine
 MAINTAINER krupesh
 
 ENV PYTHONUNBUFFERED 1
