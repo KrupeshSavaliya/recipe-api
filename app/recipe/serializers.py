@@ -3,7 +3,7 @@ from core.models import Tag, Ingredient, Recipe
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """serializer for tag objects"""
+    """Serializer for tag object"""
 
     class Meta:
         model = Tag
@@ -29,7 +29,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     )
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=Ingredient.objects.all()
+        queryset=Tag.objects.all()
     )
 
     class Meta:
