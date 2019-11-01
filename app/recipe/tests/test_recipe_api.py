@@ -215,12 +215,12 @@ class RecipeImageUploadTests(TestCase):
         self.recipe.image.delete()
 
     def test_upload_image_to_recipe(self):
-        """Test uploading image to recipe"""
+        """Test uploading an image to recipe"""
         url = image_upload_url(self.recipe.id)
         with tempfile.NamedTemporaryFile(suffix='.jpg') as ntf:
             img = Image.new('RGB', (10, 10))
-            img.save(ntf)
-            img.seek(0)
+            img.save(ntf, format='JPEG')
+            ntf.seek(0)
             res = self.client.post(url, {'image': ntf}, format='multipart')
 
         self.recipe.refresh_from_db()
@@ -234,3 +234,49 @@ class RecipeImageUploadTests(TestCase):
         res = self.client.post(url, {'image': 'notimage'}, format='multipart')
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_filter_recipes_by_tags(self):
+        """Test returning recipes with tags"""
+        recipe1 = sample_recipe(user=self.user, title='chips')
+        recipe2 = sample_recipe(user=self.user, title='fish')
+        tag1 = sample_tag(user=self.user, name='snakes')
+        tag2 = sample_tag(user=self.user, name='non veg')
+        recipe3 = sample_recipe(user=self.user, title='meggie')
+        recipe1.tags.add(tag1)
+        recipe2.tags.add(tag2)
+
+        res = self.client.get(
+            RECIPES_URL,
+            {'tags': f'{tag1.id},{tag2.id}'}
+        )
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+
+        self.assertIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
+
+    def test_filter_recipe_with_ingredients(self):
+        """Test recipe with ingredients"""
+        recipe1 = sample_recipe(user=self.user, title='chips')
+        recipe2 = sample_recipe(user=self.user, title='chicken')
+        recipe3 = sample_recipe(user=self.user, title='dosa')
+        ingredient1 = sample_ingredient(user=self.user, name='potato')
+        ingredient2 = sample_ingredient(user=self.user, name='salt')
+        recipe1.ingredients.add(ingredient1)
+        recipe2.ingredients.add(ingredient2)
+
+        res = self.client.get(
+            RECIPES_URL,
+            {'ingredients': f'{ingredient1.id},{ingredient2.id}'}
+        )
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+
+        self.assertNotIn(serializer3.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        self.assertIn(serializer1.data, res.data)
